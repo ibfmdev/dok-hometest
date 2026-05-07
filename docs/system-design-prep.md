@@ -178,7 +178,7 @@ Agrupar por categoria sinaliza maturidade.
 
 > 🎓 Cálculo nas costas do envelope. Números redondos, ordem de grandeza, **cada estimativa amarra uma decisão.**
 
-### Cálculo 1 — Volume de polling (RPS — Requests Per Second)
+### Cálculo 1 — Volume de polling (RPS)
 
 ```
 Estado estável: 1M clientes × 1.8 placas = 1.8M placas

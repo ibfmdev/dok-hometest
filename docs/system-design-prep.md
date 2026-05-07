@@ -4,7 +4,7 @@
 >
 > **Cenário escolhido:** Plataforma de **monitoramento proativo de débitos veiculares** — cliente cadastra placas, sistema avisa antes que ele descubra. É a evolução natural do HomeTest e força tudo que cabe em 1h: sharding, scheduling, rate-limit, notificações, LGPD, custo, observabilidade.
 >
-> Mesmo que caia outro cenário (pagamento+conciliação, transferência, hub multi-DETRAN), 80% das decisões aqui se transferem.
+> Mesmo que caia outro cenário (pagamento+conciliação, transferência, hub multi-DETRAN — Departamento Estadual de Trânsito), 80% das decisões aqui se transferem.
 
 ---
 
@@ -44,10 +44,10 @@ Fase 7 — Deep dive              ████████████░░░�
 |---|---|---|
 | 1 | Pergunta antes de desenhar; separa funcional de não-funcional; pede números. | Sai desenhando; assume realtime; ignora modelo de negócio. |
 | 2 | Lista MoSCoW (Must / Should / Could / Won't); justifica Won't. | Tudo é Must; lista features sem prioridade. |
-| 3 | Quantifica e justifica cada NFR ligando à decisão arquitetural. | "99.99%! Baixa latência!" sem justificativa. |
+| 3 | Quantifica e justifica cada NFR (Non-Functional Requirement) ligando à decisão arquitetural. | "99.99%! Baixa latência!" sem justificativa. |
 | 4 | Cálculo nas costas do envelope; ordens de grandeza; liga número a decisão. | Planilha precisa; calcula coisas irrelevantes (ex.: bytes de tudo). |
-| 5 | API mínima e coerente; idempotência; versão; status codes pensados. | CRUD completo de tudo; sem idempotência onde precisa. |
-| 6 | Componentes com responsabilidade clara; queue/cache só onde justifica; aponta SPOFs. | "Vou jogar Kafka aqui" sem motivo; tudo síncrono ou tudo assíncrono. |
+| 5 | API (Application Programming Interface) mínima e coerente; idempotência; versão; status codes pensados. | CRUD (Create, Read, Update, Delete) completo de tudo; sem idempotência onde precisa. |
+| 6 | Componentes com responsabilidade clara; queue/cache só onde justifica; aponta SPOFs (Single Points Of Failure). | "Vou jogar Kafka aqui" sem motivo; tudo síncrono ou tudo assíncrono. |
 | 7 | Aprofunda no que o avaliador escolher; reconhece o que não sabe. | Blefa; muda de assunto. |
 
 **4 mandamentos de live design:**
@@ -63,7 +63,7 @@ Fase 7 — Deep dive              ████████████░░░�
 
 ### O problema (típico)
 
-> *"A Dok quer lançar um produto novo: monitoramento proativo de débitos veiculares. O cliente cadastra uma ou mais placas e a Dok o avisa, antes que ele descubra por conta própria, sempre que aparecer um IPVA novo, uma multa nova, ou abrir a janela de licenciamento. Projete o sistema."*
+> *"A Dok quer lançar um produto novo: monitoramento proativo de débitos veiculares. O cliente cadastra uma ou mais placas e a Dok o avisa, antes que ele descubra por conta própria, sempre que aparecer um IPVA (Imposto sobre a Propriedade de Veículos Automotores) novo, uma multa nova, ou abrir a janela de licenciamento. Projete o sistema."*
 
 ### Perguntas que um sênior faz (5–10 min ANTES de desenhar)
 
@@ -80,7 +80,7 @@ Agrupar por categoria sinaliza maturidade.
 - Placas por cliente: média e p99?
 - Distribuição geográfica (quais estados primeiro)?
 
-**SLA / freshness**
+**SLA (Service Level Agreement) / freshness**
 - O que "antes que ele descubra" significa em **minutos/horas/dias**?
 - IPVA, multa, licenciamento têm SLA igual ou diferente?
 - O cliente espera notificação push imediata ou aceita digest diário?
@@ -97,20 +97,20 @@ Agrupar por categoria sinaliza maturidade.
 - Anti-spam: o que fazer se aparecem 10 multas de uma vez?
 
 **Restrições**
-- LGPD: vínculo CPF↔placa é dado pessoal categórico — confirma compliance?
-- Prazo do MVP — quando precisa ir ao ar?
+- LGPD (Lei Geral de Proteção de Dados): vínculo CPF (Cadastro de Pessoas Físicas)↔placa é dado pessoal categórico — confirma compliance?
+- Prazo do MVP (Minimum Viable Product) — quando precisa ir ao ar?
 - Direito ao esquecimento — qual a janela de purge?
 
 ### Restrições típicas que o avaliador devolve
 
 > Em entrevista real você não recebe tudo de uma vez — recebe sob demanda. Mas o conjunto abaixo é coerente e amarra bem o desenho.
 
-- **Público:** B2C (V1) e B2B (V2). Vínculo obrigatório (CPF do cadastro = proprietário no DETRAN, OU upload de CRLV).
+- **Público:** B2C (Business to Consumer, V1) e B2B (Business to Business, V2). Vínculo obrigatório (CPF do cadastro = proprietário no DETRAN, OU upload de CRLV — Certificado de Registro e Licenciamento de Veículo).
 - **Modelo:** assinatura ~R$9,90/placa/mês. Trial 30 dias. Custo permitido na ordem de centavos/placa/mês.
 - **SLA:** **NÃO é tempo real.** IPVA: D+1/D+2. Multa nova: ≤24h. Licenciamento: aviso 30d antes.
 - **Volume:** Ano 1 = 100k clientes × 1.5 placas. Ano 3 = 1M × 1.8 placas. 70% SP/RJ/MG no ano 1.
-- **Fonte:** DETRANs estaduais. **V1 só SP.** Rate limit heterogêneo (1–10 RPS por DETRAN). Custo: alguns cobram (R$0,05/consulta em SP), outros não. Web scraping em alguns estados.
-- **Notificação V1:** push (app) + email. WhatsApp em V2. SMS nunca (caro).
+- **Fonte:** DETRANs estaduais. **V1 só SP.** Rate limit heterogêneo (1–10 RPS — Requests Per Second — por DETRAN). Custo: alguns cobram (R$0,05/consulta em SP), outros não. Web scraping em alguns estados.
+- **Notificação V1:** push (app) + email. WhatsApp em V2. SMS (Short Message Service) nunca (caro).
 - **LGPD:** crítica. Mascarar placa em logs, criptografar PII em repouso, audit log, purge ≤30d após cancelamento.
 - **MVP:** 4 meses, só SP, IPVA + multa, push + email.
 - **Snapshot inicial:** ao cadastrar placa, cliente recebe débitos atuais (reusa serviço HomeTest).
@@ -147,7 +147,7 @@ Agrupar por categoria sinaliza maturidade.
 ### V1 — Won't (explicitamente fora do escopo)
 - **Tempo real / streaming** — sem fonte de evento, custo proibitivo.
 - **Cobertura nacional** — só SP em V1.
-- **WhatsApp, SMS** — V2 (BSP custoso) e nunca (caro).
+- **WhatsApp, SMS** — V2 (BSP — Business Solution Provider — custoso) e nunca (caro).
 - **B2B com cost center / batch / relatórios fiscais** — V2.
 - **Pagamento dos débitos pelo app** — é outro produto da Dok.
 
@@ -159,14 +159,14 @@ Agrupar por categoria sinaliza maturidade.
 
 | # | Categoria | Requisito | Por que esse número | Decisão que amarra |
 |---|---|---|---|---|
-| 1 | **Disponibilidade (app/API)** | **99.9%** mensal (~43min/mês) | Produto pago, app é a face. 99.99% custa muito (multi-AZ síncrono) sem ROI claro pra V1. | 1 região ativa + standby; multi-region só em V2. |
+| 1 | **Disponibilidade (app/API)** | **99.9%** mensal (~43min/mês) | Produto pago, app é a face. 99.99% custa muito (multi-AZ — Availability Zone — síncrono) sem ROI (Return On Investment) claro pra V1. | 1 região ativa + standby; multi-region só em V2. |
 | 2 | **Disponibilidade (pipeline polling)** | **99.5%** | Pipeline é assíncrono; 1h de atraso não derruba produto. | Workers stateless, fila durável, sem replicação síncrona. |
 | 3 | **Latência (app)** | Listagem: **p99 < 300ms**. Cadastro com validação: **p99 < 5s**. | Listagem é tela inicial. Cadastro chama provider externo, justifica chamada lenta. | Cache de leitura agressivo; chamada síncrona ao DETRAN só no cadastro. |
 | 4 | **Consistência** | **Eventual** pra dados de débito (≤24h aceitável). **Forte** pra billing. | DETRAN é fonte autoritativa; cache é cópia. Dinheiro não tolera lag. | Cache desacoplado; pagamento com idempotency key. |
-| 5 | **Durabilidade** | Audit log: **zero perda**, retenção **5 anos**. Snapshot durável. Notificação: histórico persistido. | LGPD + auditoria. Sem snapshot durável, não há delta detection. | Audit em append-only object store, não na DB transacional. |
-| 6 | **Segurança / LGPD** | Auth: cliente só vê próprias placas. PII criptografada em repouso (KMS) e em trânsito (TLS 1.2+). Plate masking em logs. Purge ≤30d após cancelamento. | LGPD não-negociável; vínculo CPF↔placa é dado pessoal categórico. | Tabelas com colunas criptografadas; chave por tenant (crypto-shredding em V2). |
+| 5 | **Durabilidade** | Audit log: **zero perda**, retenção **5 anos**. Snapshot durável. Notificação: histórico persistido. | LGPD + auditoria. Sem snapshot durável, não há delta detection. | Audit em append-only object store, não na DB (Database) transacional. |
+| 6 | **Segurança / LGPD** | Auth: cliente só vê próprias placas. PII (Personally Identifiable Information) criptografada em repouso (KMS — Key Management Service) e em trânsito (TLS — Transport Layer Security — 1.2+). Plate masking em logs. Purge ≤30d após cancelamento. | LGPD não-negociável; vínculo CPF↔placa é dado pessoal categórico. | Tabelas com colunas criptografadas; chave por tenant (crypto-shredding em V2). |
 | 7 | **Custo (operacional)** | Infra ≤ **R$0,10/placa/mês**. Polling ≤ **R$0,03/placa/mês**. | Assinatura R$9,90; precisa margem. Polling é a maior alavanca. | Cache agressivo; polling diferenciado por debt_type; smearing. |
-| 8 | **Observabilidade** | SLO com error budget. Alerta: erro DETRAN >5%/5min, p99 dobrar, circuit breaker abrir. Tracing E2E. | Cada DETRAN é dependência crítica e independente. | Métrica e dashboard por provider (parente do HomeTest). |
+| 8 | **Observabilidade** | SLO (Service Level Objective) com error budget. Alerta: erro DETRAN >5%/5min, p99 dobrar, circuit breaker abrir. Tracing E2E (End-to-End). | Cada DETRAN é dependência crítica e independente. | Métrica e dashboard por provider (parente do HomeTest). |
 
 **Omitidos com justificativa:**
 - **Throughput:** Fase 4 mostra que pico é ~50 RPS. Não é gargalo, não merece NFR dedicado.
@@ -178,7 +178,7 @@ Agrupar por categoria sinaliza maturidade.
 
 > 🎓 Cálculo nas costas do envelope. Números redondos, ordem de grandeza, **cada estimativa amarra uma decisão.**
 
-### Cálculo 1 — Volume de polling (RPS)
+### Cálculo 1 — Volume de polling (RPS — Requests Per Second)
 
 ```
 Estado estável: 1M clientes × 1.8 placas = 1.8M placas
@@ -213,7 +213,7 @@ Snapshots:      5KB × 1.8M placas                    = ~9 GB
 Notificações:   100/placa/ano × 200B × 1.8M          = ~36 GB/ano
 ```
 
-**Decisão:** dados quentes (snapshots, perfil, billing) cabem em **1 PostgreSQL bem indexado** (GB-baixo TB). Audit log NÃO mora na DB transacional → vai pra **append-only object store (S3)** com particionamento por mês. Custo derruba em ~100x.
+**Decisão:** dados quentes (snapshots, perfil, billing) cabem em **1 PostgreSQL bem indexado** (GB-baixo TB). Audit log NÃO mora na DB transacional → vai pra **append-only object store (S3 — Simple Storage Service)** com particionamento por mês. Custo derruba em ~100x.
 
 ### Cálculo 4 — Pico de notificação
 
@@ -228,7 +228,7 @@ Detecção concentrada em ~1h de polling
 ### O que NÃO calcular (e por quê)
 
 - Bandwidth de app pro cliente — commodity, não é decisão.
-- Memória/CPU dos serviços — depois do desenho macro, não antes.
+- Memória/CPU (Central Processing Unit) dos serviços — depois do desenho macro, não antes.
 - Quantidade exata de servidores — "scale horizontal, capacity planning depois do load test".
 
 ---
@@ -239,8 +239,8 @@ Detecção concentrada em ~1h de polling
 
 ### Princípios
 
-- REST com versionamento em path (`/v1/...`).
-- Auth via **JWT** (access token curto + refresh token); claims contêm `userId`.
+- REST (Representational State Transfer) com versionamento em path (`/v1/...`).
+- Auth via **JWT** — JSON Web Token; JSON = JavaScript Object Notation — (access token curto + refresh token); claims contêm `userId`.
 - **Idempotência obrigatória** em POST de cadastro e em billing (header `Idempotency-Key`).
 - Status codes literais (compatíveis com o estilo do HomeTest):
   - `400 invalid_payload`
@@ -283,6 +283,7 @@ DELETE /v1/plates/{plateId}
   Nota: soft-delete; purga total após 30d (LGPD).
 
 GET  /v1/plates/{plateId}/notifications?since=ISO&limit=50
+  # ISO = ISO 8601 datetime (International Organization for Standardization)
   200: { items: [...], nextCursor }
 
 PUT  /v1/plates/{plateId}/preferences
@@ -317,7 +318,7 @@ ValidationRequested v1
 ### Componentes (com responsabilidade clara)
 
 **Edge**
-- **CDN + WAF** (CloudFront / Cloudflare) — cache estático, proteção DDoS.
+- **CDN (Content Delivery Network) + WAF (Web Application Firewall)** (CloudFront / Cloudflare) — cache estático, proteção DDoS (Distributed Denial of Service).
 - **API Gateway** — TLS termination, auth check (JWT), rate limit por user.
 
 **Sync (cliente-facing)**
@@ -327,17 +328,17 @@ ValidationRequested v1
 
 **Async pipeline (o coração)**
 - **Scheduler** — cron + tabela `scheduled_polls(plate_id, debt_type, next_check_at)`. A cada minuto, varre `WHERE next_check_at < now()` e publica em `poll_queue`.
-- **Poll Queue** (SQS / RabbitMQ) — desacopla scheduler de workers; fornece retry e backoff.
+- **Poll Queue** (SQS — Simple Queue Service — / RabbitMQ) — desacopla scheduler de workers; fornece retry e backoff.
 - **Polling Workers** — consomem queue, fazem rate-limit check (Redis token bucket por DETRAN), chamam Debt Aggregator.
 - **Debt Aggregator** — *o coração reusa o HomeTest:* chain de `IDebtProvider`, circuit breaker isolado por DETRAN, normalização canônica.
 - **Delta Detector** — compara result com último snapshot em PG; emite `DebtDetected` para o que é novo; atualiza snapshot.
 - **Notification Dispatcher** — consome `DebtDetected`, lê preferences, aplica anti-spam (digest), emite `NotificationRequested(channel)`.
-- **Channel Workers** — Email (via SES) e Push (FCM/APNS); idempotência por chave; grava resultado em `notifications_history`.
+- **Channel Workers** — Email (via SES — Simple Email Service) e Push (FCM — Firebase Cloud Messaging — / APNS — Apple Push Notification Service); idempotência por chave; grava resultado em `notifications_history`.
 - **Validation Worker** — consome `ValidationRequested`, faz CPF↔proprietário OU OCR de CRLV; ativa placa.
 
 **Stores**
-- **PostgreSQL** (RDS/Aurora) — `users`, `plates`, `debt_snapshots` (latest), `preferences`, `billing_refs`, `scheduled_polls`, `notifications_history`. Particionamento por `user_id` em `notifications_history`.
-- **Redis** (ElastiCache) — cache de débitos por placa (TTL 12h), rate limiter por DETRAN (token bucket), set de idempotência (24h TTL).
+- **PostgreSQL** (RDS — Relational Database Service — /Aurora) — `users`, `plates`, `debt_snapshots` (latest), `preferences`, `billing_refs`, `scheduled_polls`, `notifications_history`. Particionamento por `user_id` em `notifications_history`.
+- **Redis** (ElastiCache) — cache de débitos por placa (TTL — Time To Live — 12h), rate limiter por DETRAN (token bucket), set de idempotência (24h TTL).
 - **S3** — audit log (Parquet particionado por mês), CRLVs uploaded.
 - **Message bus** (SQS / Kafka) — `poll_queue`, eventos (`DebtDetected`, `NotificationRequested`, `AuditEvent`, `ValidationRequested`).
 
@@ -362,7 +363,7 @@ App → Gateway → Plate Service
 
 ValidationWorker (consumer):
   └─ se cpf_match: chama Debt Aggregator (consulta DETRAN, compara CPF)
-     se crlv_upload: chama OCR (S3 file)
+     se crlv_upload: chama OCR (Optical Character Recognition) em arquivo no S3
   └─ atualiza PG (status = "active" | "rejected")
   └─ publica PlateActivated
   └─ Scheduler insere primeira entrada em scheduled_polls
@@ -408,7 +409,7 @@ App → Gateway → Read API
   └─ retorna lista
 ```
 
-### ASCII overview
+### ASCII (American Standard Code for Information Interchange) overview
 
 ```
                              ┌──────────────┐
@@ -477,10 +478,10 @@ App → Gateway → Read API
 
 ### SPOFs identificados (e mitigação)
 
-- **PostgreSQL** — réplica síncrona standby, RPO ~0.
-- **Redis** — cluster mode + AOF; perda do cache só impacta latência (cold cache).
-- **DETRAN externo** — circuit breaker por estado; UI mostra "última atualização há X" honestamente.
-- **API Gateway** — multi-AZ atrás de LB.
+- **PostgreSQL** — réplica síncrona standby, RPO (Recovery Point Objective) ~0.
+- **Redis** — cluster mode + AOF (Append-Only File); perda do cache só impacta latência (cold cache).
+- **DETRAN externo** — circuit breaker por estado; UI (User Interface) mostra "última atualização há X" honestamente.
+- **API Gateway** — multi-AZ atrás de LB (Load Balancer).
 - **Scheduler** — leader election (1 ativo, demais em standby); job idempotente.
 
 ---
@@ -540,7 +541,7 @@ App → Gateway → Read API
 - Notificações futuras bloqueadas em `purge_at - 30d` (cancelado).
 
 **2. Audit log pseudonimizado em S3**
-- Não armazena `user_id` direto — armazena `user_hash = HMAC(user_id, secret)`.
+- Não armazena `user_id` direto — armazena `user_hash = HMAC(user_id, secret)` (HMAC = Hash-based Message Authentication Code).
 - Mantém valor analítico (auditoria, fraude) sem identificar pessoa.
 - Particionamento por mês (`s3://audit/year=2026/month=05/...`); query via Athena.
 
@@ -573,7 +574,7 @@ App → Gateway → Read API
 
 - **Como você garante que uma notificação só vai 1x?** → Idempotency key `(plateId, debtId, channel)` em Redis; Channel Worker checa antes de enviar.
 - **Como você lida com um DETRAN em scraping vs API?** → Adapter interface uniforme; scraping atrás de feature flag e com rate limit ainda mais agressivo; circuit breaker mais sensível.
-- **Como você faz onboarding de um novo estado?** → Implementar `IDebtProvider` (mesma do HomeTest), registrar DI com Polly, ajustar `ProvidersOptions`. Pipeline existente absorve.
+- **Como você faz onboarding de um novo estado?** → Implementar `IDebtProvider` (mesma do HomeTest), registrar DI (Dependency Injection) com Polly, ajustar `ProvidersOptions`. Pipeline existente absorve.
 - **E se o produto crescer 10x?** → Sharding de PG por `user_id`; dividir poll_queue em filas por estado; multi-region read replicas.
 - **Como você detecta fraude (cliente monitorando placa que não é dele)?** → Validação de vínculo no cadastro (já temos); audit log alimenta análise periódica; rate limit de cadastros por user.
 - **Custo total estimado da operação?** → Decompor: provider (~R$300-500k), infra (~R$50-100k), notificações (SES/FCM ~baratíssimo), pessoal/operação. Total / receita = margem de contribuição.
@@ -609,7 +610,7 @@ App → Gateway → Read API
 
 ## Prompts para gerar o diagrama no Excalidraw
 
-O Excalidraw tem 2 features de IA úteis: **Text to Diagram** (linguagem natural) e **Mermaid to Excalidraw** (cola Mermaid e converte). Forneço os dois.
+O Excalidraw tem 2 features de IA (Inteligência Artificial; em inglês, AI = Artificial Intelligence) úteis: **Text to Diagram** (linguagem natural) e **Mermaid to Excalidraw** (cola Mermaid e converte). Forneço os dois.
 
 ### Opção 1 — Text to Diagram (Excalidraw AI)
 
@@ -767,7 +768,7 @@ Pra você defender com confiança, segue o mapping direto entre o que você já 
 | `Money` HALF_UP, JSON string | Reusado em snapshots e notificações |
 | `IDebtsClock` (tempo controlável) | Reusado pra testes integrados do scheduler |
 | Status codes literais (400/422/503) | Reusado no API contract |
-| ADRs como prática | Cada decisão deste doc é candidata a ADR |
+| ADRs (Architecture Decision Records) como prática | Cada decisão deste doc é candidata a ADR |
 
 > 🎓 **Frase pronta:** *"Esse aggregator que estou desenhando aqui é a evolução natural da arquitetura que apresentei no HomeTest. As mesmas garantias de isolamento de provider e circuit breaker se aplicam — só multiplico de 2 para 27."* Mostra continuidade e tira pressão.
 

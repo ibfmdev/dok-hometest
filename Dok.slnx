@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Dok.Api/Dok.Api.csproj" />
+    <Project Path="src/Dok.Application/Dok.Application.csproj" />
+    <Project Path="src/Dok.Domain/Dok.Domain.csproj" />
+    <Project Path="src/Dok.FakeProviders/Dok.FakeProviders.csproj" />
+    <Project Path="src/Dok.Infrastructure/Dok.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Dok.Application.Tests/Dok.Application.Tests.csproj" />
+    <Project Path="tests/Dok.Domain.Tests/Dok.Domain.Tests.csproj" />
+    <Project Path="tests/Dok.Integration.Tests/Dok.Integration.Tests.csproj" />
+  </Folder>
+</Solution>

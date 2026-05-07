@@ -1,0 +1,42 @@
+services:
+  provider-a:
+    build:
+      context: .
+      dockerfile: src/Dok.FakeProviders/Dockerfile
+    container_name: dok-provider-a
+    environment:
+      Provider__Name: ProviderA
+      Provider__Port: "9001"
+      Provider__DataFile: data/providerA.json
+      Provider__ContentType: application/json
+    ports: ["9001:9001"]
+
+  provider-b:
+    build:
+      context: .
+      dockerfile: src/Dok.FakeProviders/Dockerfile
+    container_name: dok-provider-b
+    environment:
+      Provider__Name: ProviderB
+      Provider__Port: "9002"
+      Provider__DataFile: data/providerB.xml
+      Provider__ContentType: application/xml
+    ports: ["9002:9002"]
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Dok.Api/Dockerfile
+    container_name: dok-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Providers__ProviderAUrl: http://provider-a:9001
+      Providers__ProviderBUrl: http://provider-b:9002
+      # Fixa a data em 2024-05-10 conforme spec, garantindo que os exemplos
+      # numéricos do enunciado (1800.00, 555.93, 2355.93) batam na demo.
+      # Para usar relógio real, remova esta linha.
+      Domain__ReferenceDate: "2024-05-10T00:00:00Z"
+    depends_on:
+      - provider-a
+      - provider-b
+    ports: ["8080:8080"]

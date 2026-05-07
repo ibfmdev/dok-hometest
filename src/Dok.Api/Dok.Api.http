@@ -1,0 +1,6 @@
+@Dok.Api_HostAddress = http://localhost:5047
+
+GET {{Dok.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
